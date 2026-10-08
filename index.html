@@ -1,0 +1,1754 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hospital Patient Management System | Apache Hive & Docker</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Chart.js for Interactive Visual Analytics -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --primary: #0284c7;
+            --primary-dark: #0369a1;
+            --primary-light: #e0f2fe;
+            --secondary: #0f172a;
+            --slate-800: #1e293b;
+            --accent: #10b981;
+            --accent-purple: #8b5cf6;
+            --accent-amber: #f59e0b;
+            --accent-rose: #f43f5e;
+            --bg: #f8fafc;
+            --surface: #ffffff;
+            --border: #e2e8f0;
+            --text-main: #1e293b;
+            --text-muted: #64748b;
+            --radius-sm: 8px;
+            --radius-md: 12px;
+            --radius-lg: 16px;
+            --shadow-sm: 0 1px 3px 0 rgb(0 0 0 / 0.06);
+            --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.08), 0 2px 4px -2px rgb(0 0 0 / 0.06);
+            --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg);
+            color: var(--text-main);
+            line-height: 1.5;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Header Styling */
+        header {
+            background: linear-gradient(135deg, #0f172a 0%, #0369a1 50%, #0284c7 100%);
+            color: white;
+            padding: 1.6rem 2rem;
+            box-shadow: var(--shadow-md);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .header-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 1.2rem;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .brand-icon {
+            background: rgba(255, 255, 255, 0.18);
+            backdrop-filter: blur(10px);
+            width: 52px;
+            height: 52px;
+            border-radius: var(--radius-md);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 26px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+
+        .brand-text h1 {
+            font-size: 1.55rem;
+            font-weight: 800;
+            letter-spacing: -0.02em;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .brand-text p {
+            font-size: 0.86rem;
+            opacity: 0.9;
+        }
+
+        .tech-badges {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .tech-pill {
+            background: rgba(15, 23, 42, 0.55);
+            border: 1px solid rgba(255, 255, 255, 0.22);
+            padding: 0.4rem 0.8rem;
+            border-radius: 9999px;
+            font-size: 0.76rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.45rem;
+            backdrop-filter: blur(4px);
+        }
+
+        .tech-pill.docker-pill {
+            background: rgba(2, 132, 199, 0.35);
+            border-color: #38bdf8;
+            color: #e0f2fe;
+        }
+
+        .tech-pill span.dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #10b981;
+            box-shadow: 0 0 8px #10b981;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 0.6rem;
+            align-items: center;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.45rem;
+            padding: 0.55rem 1rem;
+            font-size: 0.84rem;
+            font-weight: 600;
+            border-radius: var(--radius-sm);
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-decoration: none;
+        }
+
+        .btn-primary {
+            background: #10b981;
+            color: white;
+            box-shadow: 0 2px 4px rgba(16, 185, 129, 0.3);
+        }
+        .btn-primary:hover {
+            background: #059669;
+            transform: translateY(-1px);
+        }
+
+        .btn-outline-white {
+            background: rgba(255, 255, 255, 0.15);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+        .btn-outline-white:hover {
+            background: rgba(255, 255, 255, 0.25);
+        }
+
+        .btn-secondary {
+            background: var(--surface);
+            color: var(--text-main);
+            border: 1px solid var(--border);
+        }
+        .btn-secondary:hover {
+            background: #f1f5f9;
+        }
+
+        .btn-danger {
+            background: #fee2e2;
+            color: #b91c1c;
+            border: 1px solid #fecaca;
+        }
+        .btn-danger:hover {
+            background: #fecaca;
+        }
+
+        .btn-sm {
+            padding: 0.35rem 0.65rem;
+            font-size: 0.76rem;
+            border-radius: 6px;
+        }
+
+        /* Container */
+        .container {
+            max-width: 1400px;
+            margin: 1.8rem auto;
+            padding: 0 1.5rem;
+            flex: 1;
+        }
+
+        /* Docker Banner */
+        .docker-banner {
+            background: linear-gradient(90deg, #0f172a 0%, #1e293b 100%);
+            border: 1px solid #334155;
+            color: white;
+            border-radius: var(--radius-md);
+            padding: 0.9rem 1.4rem;
+            margin-bottom: 1.8rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 1rem;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .docker-banner-left {
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+        }
+
+        .docker-logo {
+            font-size: 1.8rem;
+        }
+
+        .docker-banner-text h3 {
+            font-size: 0.95rem;
+            font-weight: 700;
+            color: #38bdf8;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .docker-banner-text p {
+            font-size: 0.8rem;
+            color: #94a3b8;
+        }
+
+        .docker-commands-snippet {
+            background: #020617;
+            border: 1px solid #1e293b;
+            padding: 0.4rem 0.8rem;
+            border-radius: var(--radius-sm);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.78rem;
+            color: #4ade80;
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+        }
+
+        /* KPI Metrics Grid */
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 1.2rem;
+            margin-bottom: 2rem;
+        }
+
+        .metric-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            padding: 1.3rem 1.4rem;
+            box-shadow: var(--shadow-sm);
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            overflow: hidden;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .metric-card:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .metric-card::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 4px;
+            height: 100%;
+        }
+
+        .card-blue::after { background: var(--primary); }
+        .card-green::after { background: var(--accent); }
+        .card-purple::after { background: var(--accent-purple); }
+        .card-rose::after { background: var(--accent-rose); }
+        .card-amber::after { background: var(--accent-amber); }
+
+        .metric-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.6rem;
+        }
+
+        .metric-title {
+            font-size: 0.8rem;
+            font-weight: 700;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }
+
+        .metric-icon {
+            font-size: 1.25rem;
+            padding: 0.35rem 0.45rem;
+            border-radius: var(--radius-sm);
+            background: var(--bg);
+        }
+
+        .metric-value {
+            font-size: 1.75rem;
+            font-weight: 800;
+            color: var(--secondary);
+            margin-bottom: 0.25rem;
+        }
+
+        .metric-sub {
+            font-size: 0.78rem;
+            color: var(--text-muted);
+        }
+
+        /* Dashboard Section */
+        .dashboard-section {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            padding: 1.6rem;
+            margin-bottom: 2rem;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .section-heading {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.25rem;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .heading-left h2 {
+            font-size: 1.25rem;
+            font-weight: 800;
+            color: var(--secondary);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .heading-left p {
+            font-size: 0.84rem;
+            color: var(--text-muted);
+            margin-top: 0.15rem;
+        }
+
+        .controls-row {
+            display: flex;
+            gap: 0.75rem;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .search-box {
+            position: relative;
+            min-width: 250px;
+        }
+
+        .search-box input {
+            width: 100%;
+            padding: 0.55rem 0.9rem 0.55rem 2.2rem;
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--border);
+            font-size: 0.85rem;
+            outline: none;
+            transition: all 0.2s;
+        }
+
+        .search-box input:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.15);
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 0.7rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-muted);
+            font-size: 0.85rem;
+        }
+
+        .filter-select {
+            padding: 0.55rem 0.85rem;
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--border);
+            background: white;
+            font-size: 0.82rem;
+            color: var(--text-main);
+            font-weight: 500;
+            outline: none;
+            cursor: pointer;
+        }
+
+        /* Table */
+        .table-responsive {
+            overflow-x: auto;
+            border-radius: var(--radius-md);
+            border: 1px solid var(--border);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+            font-size: 0.84rem;
+        }
+
+        thead {
+            background-color: #f1f5f9;
+        }
+
+        th {
+            padding: 0.8rem 0.9rem;
+            font-weight: 700;
+            color: var(--secondary);
+            border-bottom: 1px solid var(--border);
+            white-space: nowrap;
+            text-transform: uppercase;
+            font-size: 0.72rem;
+            letter-spacing: 0.05em;
+        }
+
+        td {
+            padding: 0.8rem 0.9rem;
+            border-bottom: 1px solid var(--border);
+            white-space: nowrap;
+        }
+
+        tbody tr:hover {
+            background-color: #f8fafc;
+        }
+
+        tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.22rem 0.55rem;
+            border-radius: 6px;
+            font-size: 0.72rem;
+            font-weight: 600;
+        }
+
+        .badge-blood { background: #fee2e2; color: #b91c1c; border: 1px solid #fecaca; }
+        .badge-gender-m { background: #e0f2fe; color: #0369a1; }
+        .badge-gender-f { background: #fce7f3; color: #be185d; }
+        .badge-doctor { background: #ecfdf5; color: #047857; font-weight: 600; }
+        .badge-stay { background: #fef3c7; color: #b45309; font-weight: 600; }
+
+        .currency-val {
+            font-weight: 700;
+            color: var(--secondary);
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .action-cell {
+            display: flex;
+            gap: 0.4rem;
+        }
+
+        /* Tabs */
+        .tabs-header {
+            display: flex;
+            gap: 0.5rem;
+            border-bottom: 1px solid var(--border);
+            margin-bottom: 1.4rem;
+            overflow-x: auto;
+            padding-bottom: 0.5rem;
+        }
+
+        .tab-btn {
+            background: transparent;
+            border: none;
+            padding: 0.6rem 1.1rem;
+            font-size: 0.86rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            transition: all 0.2s ease;
+            white-space: nowrap;
+        }
+
+        .tab-btn:hover {
+            color: var(--primary);
+            background: var(--primary-light);
+        }
+
+        .tab-btn.active {
+            color: white;
+            background: var(--primary);
+        }
+
+        .tab-pane {
+            display: none;
+        }
+
+        .tab-pane.active {
+            display: block;
+        }
+
+        /* Query Showcase Cards */
+        .query-cards-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+            gap: 1.3rem;
+        }
+
+        .query-result-card {
+            background: #f8fafc;
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            padding: 1.2rem;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .query-result-card h3 {
+            font-size: 0.92rem;
+            font-weight: 700;
+            color: var(--secondary);
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 0.4rem;
+        }
+
+        .sql-box {
+            background: #0f172a;
+            color: #38bdf8;
+            padding: 0.6rem 0.8rem;
+            border-radius: var(--radius-sm);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.72rem;
+            margin-bottom: 0.75rem;
+            overflow-x: auto;
+            line-height: 1.4;
+            position: relative;
+        }
+
+        .sql-box span.kw { color: #f43f5e; font-weight: 600; }
+        .sql-box span.fn { color: #a855f7; }
+
+        .result-box {
+            background: white;
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            padding: 0.75rem 0.85rem;
+        }
+
+        .stat-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.4rem 0;
+            border-bottom: 1px dashed var(--border);
+            font-size: 0.82rem;
+        }
+
+        .stat-row:last-child {
+            border-bottom: none;
+        }
+
+        /* SQL Console Runner */
+        .sql-runner-wrapper {
+            background: #0f172a;
+            border-radius: var(--radius-md);
+            padding: 1.25rem;
+            color: white;
+            margin-bottom: 1.5rem;
+        }
+
+        .sql-runner-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.8rem;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+
+        .sql-runner-title {
+            font-size: 0.95rem;
+            font-weight: 700;
+            color: #38bdf8;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .sql-editor-textarea {
+            width: 100%;
+            height: 90px;
+            background: #020617;
+            border: 1px solid #334155;
+            border-radius: var(--radius-sm);
+            padding: 0.8rem;
+            color: #4ade80;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.82rem;
+            resize: vertical;
+            outline: none;
+            margin-bottom: 0.8rem;
+        }
+
+        .sql-editor-textarea:focus {
+            border-color: #38bdf8;
+        }
+
+        /* Charts Grid */
+        .charts-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+            gap: 1.5rem;
+            margin-top: 1rem;
+        }
+
+        .chart-box {
+            background: white;
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            padding: 1.25rem;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .chart-box h4 {
+            font-size: 0.9rem;
+            font-weight: 700;
+            color: var(--secondary);
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        /* Modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(15, 23, 42, 0.65);
+            backdrop-filter: blur(4px);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            padding: 1rem;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal-box {
+            background: white;
+            width: 100%;
+            max-width: 650px;
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-lg);
+            overflow: hidden;
+            animation: modalPop 0.25s ease-out;
+            max-height: 90vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        @keyframes modalPop {
+            from { transform: scale(0.95); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+
+        .modal-header {
+            background: linear-gradient(135deg, #0369a1, #0284c7);
+            color: white;
+            padding: 1.2rem 1.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-header h3 {
+            font-size: 1.15rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .modal-close {
+            background: rgba(255,255,255,0.2);
+            border: none;
+            color: white;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            font-size: 1.2rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-body {
+            padding: 1.5rem;
+            overflow-y: auto;
+            flex: 1;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1rem;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.35rem;
+        }
+
+        .form-group.full-width {
+            grid-column: span 2;
+        }
+
+        .form-group label {
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--secondary);
+        }
+
+        .form-group input, .form-group select {
+            padding: 0.55rem 0.85rem;
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--border);
+            font-size: 0.85rem;
+            outline: none;
+        }
+
+        .form-group input:focus, .form-group select:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.15);
+        }
+
+        .modal-footer {
+            background: #f8fafc;
+            border-top: 1px solid var(--border);
+            padding: 1rem 1.5rem;
+            display: flex;
+            justify-content: flex-end;
+            gap: 0.75rem;
+        }
+
+        /* Toast Notifications */
+        .toast-container {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 2000;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .toast {
+            background: var(--secondary);
+            color: white;
+            padding: 0.8rem 1.2rem;
+            border-radius: var(--radius-sm);
+            box-shadow: var(--shadow-lg);
+            font-size: 0.85rem;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            animation: slideIn 0.3s ease;
+        }
+
+        .toast-success { border-left: 4px solid #10b981; }
+        .toast-info { border-left: 4px solid #0284c7; }
+        .toast-danger { border-left: 4px solid #f43f5e; }
+
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        /* Docker Info Modal content */
+        .docker-card-code {
+            background: #0f172a;
+            color: #38bdf8;
+            padding: 0.8rem 1rem;
+            border-radius: var(--radius-sm);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.8rem;
+            margin-bottom: 0.8rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .docker-card-code code {
+            color: #4ade80;
+        }
+
+        /* Footer */
+        footer {
+            background: var(--secondary);
+            color: #94a3b8;
+            padding: 1.8rem 1.5rem;
+            text-align: center;
+            font-size: 0.82rem;
+            border-top: 1px solid #334155;
+            margin-top: auto;
+        }
+
+        footer strong {
+            color: #f8fafc;
+        }
+
+        @media (max-width: 768px) {
+            .header-content { flex-direction: column; align-items: flex-start; }
+            .metrics-grid { grid-template-columns: repeat(2, 1fr); }
+            .form-grid { grid-template-columns: 1fr; }
+            .form-group.full-width { grid-column: span 1; }
+            .charts-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- Header -->
+<header>
+    <div class="header-content">
+        <div class="brand">
+            <div class="brand-icon">&#127973;</div>
+            <div class="brand-text">
+                <h1>Hospital Patient Management System <span style="font-size: 0.75rem; background: rgba(255,255,255,0.2); padding: 2px 8px; border-radius: 6px; font-weight: 600;">v2.4</span></h1>
+                <p>Apache Hive Big Data Analytics & Docker Containerized Monitoring Dashboard</p>
+            </div>
+        </div>
+        <div class="tech-badges">
+            <div class="tech-pill docker-pill"><span class="dot"></span> Docker: hospital-frontend (8080)</div>
+            <div class="tech-pill"><span class="dot"></span> Apache Hive 4.1.0</div>
+            <div class="tech-pill"><span class="dot"></span> Apache Tez Engine</div>
+            <div class="tech-pill"><span class="dot"></span> DB: hospital_db</div>
+        </div>
+        <div class="header-actions">
+            <button class="btn btn-outline-white" onclick="openDockerModal()">&#128011; Docker Info</button>
+            <button class="btn btn-primary" onclick="openPatientModal()">&#10010; Add Patient</button>
+        </div>
+    </div>
+</header>
+
+<div class="container">
+
+    <!-- Docker Running Status Banner -->
+    <div class="docker-banner">
+        <div class="docker-banner-left">
+            <div class="docker-logo">&#128011;</div>
+            <div class="docker-banner-text">
+                <h3>Containerized Environment Active &bull; Dockerized with Nginx Alpine</h3>
+                <p>Frontend served via Nginx on port <strong>8080</strong> &bull; Hive Metastore linked on port <strong>9083</strong> &bull; Big Data HiveQL Queries ready</p>
+            </div>
+        </div>
+        <div class="docker-commands-snippet">
+            <span>$ docker compose up -d</span>
+            <button class="btn btn-sm btn-outline-white" onclick="copyToClipboard('docker compose up -d')">&#128203; Copy</button>
+        </div>
+    </div>
+
+    <!-- KPI Metric Cards (Dynamic Live Recalculation) -->
+    <div class="metrics-grid">
+        <div class="metric-card card-blue">
+            <div class="metric-header">
+                <span class="metric-title">Total Patients</span>
+                <span class="metric-icon">&#128101;</span>
+            </div>
+            <div class="metric-value" id="kpiTotalPatients">10</div>
+            <div class="metric-sub" id="kpiGenderBreakdown">5 Male &bull; 5 Female</div>
+        </div>
+
+        <div class="metric-card card-green">
+            <div class="metric-header">
+                <span class="metric-title">Total Hospital Revenue</span>
+                <span class="metric-icon">&#128179;</span>
+            </div>
+            <div class="metric-value" style="color: #059669;" id="kpiTotalBill">&#8377;1,17,500</div>
+            <div class="metric-sub">Hive <code>SUM(bill_amount)</code></div>
+        </div>
+
+        <div class="metric-card card-purple">
+            <div class="metric-header">
+                <span class="metric-title">Average Bill Amount</span>
+                <span class="metric-icon">&#128200;</span>
+            </div>
+            <div class="metric-value" style="color: #7c3aed;" id="kpiAvgBill">&#8377;11,750</div>
+            <div class="metric-sub">Hive <code>AVG(bill_amount)</code></div>
+        </div>
+
+        <div class="metric-card card-rose">
+            <div class="metric-header">
+                <span class="metric-title">Highest Single Bill</span>
+                <span class="metric-icon">&#127942;</span>
+            </div>
+            <div class="metric-value" style="color: #e11d48;" id="kpiHighestBill">&#8377;25,000</div>
+            <div class="metric-sub" id="kpiHighestBillPatient">Karthik Raj (Heart Disease)</div>
+        </div>
+
+        <div class="metric-card card-amber">
+            <div class="metric-header">
+                <span class="metric-title">Longest Stay Duration</span>
+                <span class="metric-icon">&#128337;</span>
+            </div>
+            <div class="metric-value" style="color: #d97706;" id="kpiLongestStay">13 Days</div>
+            <div class="metric-sub" id="kpiLongestStayPatient">Patient ID: 103</div>
+        </div>
+    </div>
+
+    <!-- Patient Records Table Section -->
+    <div class="dashboard-section">
+        <div class="section-heading">
+            <div class="heading-left">
+                <h2>&#128203; Hospital Patient Master Records</h2>
+                <p>Live synchronized records with Hive table <code>hospital_db.patients</code></p>
+            </div>
+            <div class="controls-row">
+                <div class="search-box">
+                    <span class="search-icon">&#128269;</span>
+                    <input type="text" id="searchInput" placeholder="Search patient, disease, doctor..." onkeyup="filterPatients()">
+                </div>
+                <select id="doctorFilter" class="filter-select" onchange="filterPatients()">
+                    <option value="">All Doctors</option>
+                    <option value="Dr. Kumar">Dr. Kumar</option>
+                    <option value="Dr. Meena">Dr. Meena</option>
+                    <option value="Dr. Ravi">Dr. Ravi</option>
+                    <option value="Dr. Priya">Dr. Priya</option>
+                </select>
+                <select id="genderFilter" class="filter-select" onchange="filterPatients()">
+                    <option value="">All Genders</option>
+                    <option value="Male">Male</option>
+                    <option value="Female">Female</option>
+                </select>
+                <button class="btn btn-secondary" onclick="exportToCSV()">&#128190; Export CSV</button>
+                <button class="btn btn-primary" onclick="openPatientModal()">&#10010; Add Record</button>
+            </div>
+        </div>
+
+        <div class="table-responsive">
+            <table id="patientTable">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Patient Name</th>
+                        <th>Age</th>
+                        <th>Gender</th>
+                        <th>Blood</th>
+                        <th>Diagnosis / Disease</th>
+                        <th>Attending Doctor</th>
+                        <th>Admission</th>
+                        <th>Discharge</th>
+                        <th>Stay</th>
+                        <th>Room</th>
+                        <th>Treatment</th>
+                        <th>Bill (&#8377;)</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="patientTableBody">
+                    <!-- Populated dynamically via JS -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Interactive Hive Query Console & Analytics Showcase -->
+    <div class="dashboard-section">
+        <div class="section-heading">
+            <div class="heading-left">
+                <h2>&#9889; Apache Hive Big Data Query Showcase & Simulator</h2>
+                <p>Execute and visualize all HiveQL analytical queries directly on the Dockerized dataset</p>
+            </div>
+        </div>
+
+        <!-- SQL Query Simulator Box -->
+        <div class="sql-runner-wrapper">
+            <div class="sql-runner-header">
+                <div class="sql-runner-title">&#128187; HiveQL Interactive Query Runner (Beeline Simulator)</div>
+                <div style="display: flex; gap: 0.5rem;">
+                    <select id="queryPresets" class="filter-select" style="background:#1e293b; color:white; border-color:#334155;" onchange="loadPresetQuery()">
+                        <option value="1">Q1: Total Patients & Aggregate Revenue</option>
+                        <option value="2">Q2: Doctor-Wise Revenue Breakdown</option>
+                        <option value="3">Q3: High-Value Bills (> ₹10,000)</option>
+                        <option value="4">Q4: Blood-Group Distribution</option>
+                        <option value="5">Q5: Senior Patients (Age > 40)</option>
+                        <option value="6">Q6: Stay Duration Analysis (DATEDIFF)</option>
+                    </select>
+                    <button class="btn btn-primary" onclick="runSimulatedQuery()">&#9654; Execute Hive Query</button>
+                </div>
+            </div>
+            <textarea id="sqlQueryInput" class="sql-editor-textarea">SELECT doctor, COUNT(*) AS total_patients, SUM(bill_amount) AS total_revenue FROM patients GROUP BY doctor ORDER BY total_revenue DESC;</textarea>
+            <div id="sqlOutputConsole" style="display: none; background: #020617; border-radius: 6px; padding: 0.8rem; font-family: 'JetBrains Mono', monospace; font-size: 0.78rem; border: 1px solid #1e293b;">
+                <div style="color: #38bdf8; margin-bottom: 0.4rem;" id="sqlOutputMeta">Running Tez Engine Job... Done (0.42 seconds)</div>
+                <div id="sqlOutputTable" style="overflow-x: auto;"></div>
+            </div>
+        </div>
+
+        <div class="tabs-header">
+            <button class="tab-btn active" onclick="switchTab('tab-doctor')">Doctor & Revenue</button>
+            <button class="tab-btn" onclick="switchTab('tab-demographics')">Demographics & Blood</button>
+            <button class="tab-btn" onclick="switchTab('tab-clinical')">Clinical & Stay Duration</button>
+            <button class="tab-btn" onclick="switchTab('tab-charts')">&#128202; Visual Analytics Charts</button>
+            <button class="tab-btn" onclick="switchTab('tab-summary')">System Summary</button>
+        </div>
+
+        <!-- Tab 1: Doctor & Revenue -->
+        <div id="tab-doctor" class="tab-pane active">
+            <div class="query-cards-grid">
+                <div class="query-result-card">
+                    <h3>&#128104;&#8205;&#9877;&#65039; Doctor-Wise Patient Count (Q3) <button class="btn btn-sm btn-secondary" onclick="copyToClipboard('SELECT doctor, COUNT(*) FROM patients GROUP BY doctor;')">&#128203;</button></h3>
+                    <div class="sql-box">
+                        <span class="kw">SELECT</span> doctor, <span class="fn">COUNT</span>(*) <span class="kw">FROM</span> patients <span class="kw">GROUP BY</span> doctor;
+                    </div>
+                    <div class="result-box" id="q3ResultBox">
+                        <div class="stat-row"><span>Dr. Meena (General/Pulm)</span> <strong>3 Patients</strong></div>
+                        <div class="stat-row"><span>Dr. Ravi (General/Ortho)</span> <strong>3 Patients</strong></div>
+                        <div class="stat-row"><span>Dr. Kumar (Cardio/Uro)</span> <strong>2 Patients</strong></div>
+                        <div class="stat-row"><span>Dr. Priya (Neuro/Hema)</span> <strong>2 Patients</strong></div>
+                    </div>
+                </div>
+
+                <div class="query-result-card">
+                    <h3>&#128181; Doctor-Wise Total Bill (Q13) <button class="btn btn-sm btn-secondary" onclick="copyToClipboard('SELECT doctor, SUM(bill_amount) FROM patients GROUP BY doctor ORDER BY 2 DESC;')">&#128203;</button></h3>
+                    <div class="sql-box">
+                        <span class="kw">SELECT</span> doctor, <span class="fn">SUM</span>(bill_amount) <span class="kw">FROM</span> patients <span class="kw">GROUP BY</span> doctor <span class="kw">ORDER BY</span> 2 <span class="kw">DESC</span>;
+                    </div>
+                    <div class="result-box" id="q13ResultBox">
+                        <div class="stat-row"><span>Dr. Kumar</span> <strong class="currency-val">&#8377;43,000</strong></div>
+                        <div class="stat-row"><span>Dr. Meena</span> <strong class="currency-val">&#8377;32,000</strong></div>
+                        <div class="stat-row"><span>Dr. Ravi</span> <strong class="currency-val">&#8377;31,500</strong></div>
+                        <div class="stat-row"><span>Dr. Priya</span> <strong class="currency-val">&#8377;11,000</strong></div>
+                    </div>
+                </div>
+
+                <div class="query-result-card">
+                    <h3>&#128184; Bills Above &#8377;10,000 (Q12) <button class="btn btn-sm btn-secondary" onclick="copyToClipboard('SELECT patient_name, disease, bill_amount FROM patients WHERE bill_amount > 10000;')">&#128203;</button></h3>
+                    <div class="sql-box">
+                        <span class="kw">SELECT</span> patient_name, disease, bill_amount <span class="kw">FROM</span> patients <span class="kw">WHERE</span> bill_amount > 10000;
+                    </div>
+                    <div class="result-box" id="q12ResultBox">
+                        <div class="stat-row"><span>Karthik Raj (Heart Disease)</span> <strong class="currency-val">&#8377;25,000</strong></div>
+                        <div class="stat-row"><span>Vijay Kumar (Kidney Stone)</span> <strong class="currency-val">&#8377;18,000</strong></div>
+                        <div class="stat-row"><span>Meena Kumari (Pneumonia)</span> <strong class="currency-val">&#8377;16,000</strong></div>
+                        <div class="stat-row"><span>Rahul Das (Arthritis)</span> <strong class="currency-val">&#8377;14,000</strong></div>
+                        <div class="stat-row"><span>Suresh Babu (Hypertension)</span> <strong class="currency-val">&#8377;12,000</strong></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab 2: Demographics -->
+        <div id="tab-demographics" class="tab-pane">
+            <div class="query-cards-grid">
+                <div class="query-result-card">
+                    <h3>&#9878;&#65039; Gender-Wise Count (Q7)</h3>
+                    <div class="sql-box">
+                        <span class="kw">SELECT</span> gender, <span class="fn">COUNT</span>(*) <span class="kw">FROM</span> patients <span class="kw">GROUP BY</span> gender;
+                    </div>
+                    <div class="result-box" id="q7ResultBox">
+                        <div class="stat-row"><span>Male Patients</span> <strong>5 (50%)</strong></div>
+                        <div class="stat-row"><span>Female Patients</span> <strong>5 (50%)</strong></div>
+                    </div>
+                </div>
+
+                <div class="query-result-card">
+                    <h3>&#129656; Blood-Group Distribution (Q14 & Q2)</h3>
+                    <div class="sql-box">
+                        <span class="kw">SELECT</span> blood_group, <span class="fn">COUNT</span>(*) <span class="kw">FROM</span> patients <span class="kw">GROUP BY</span> blood_group;
+                    </div>
+                    <div class="result-box" id="q14ResultBox">
+                        <div class="stat-row"><span>O+ (Arun Kumar, Lakshmi Priya)</span> <span class="badge badge-blood">2 Patients</span></div>
+                        <div class="stat-row"><span>A+ (Priya Sharma, Meena Kumari)</span> <span class="badge badge-blood">2 Patients</span></div>
+                        <div class="stat-row"><span>B+ (Karthik Raj)</span> <span class="badge badge-blood">1 Patient</span></div>
+                        <div class="stat-row"><span>AB+ (Divya S)</span> <span class="badge badge-blood">1 Patient</span></div>
+                        <div class="stat-row"><span>A-, B-, O-, AB-</span> <span class="badge badge-blood">1 Patient each</span></div>
+                    </div>
+                </div>
+
+                <div class="query-result-card">
+                    <h3>&#129489;&#8205;&#129467; Patients Above 40 Years (Q8)</h3>
+                    <div class="sql-box">
+                        <span class="kw">SELECT</span> patient_name, age, disease <span class="kw">FROM</span> patients <span class="kw">WHERE</span> age > 40;
+                    </div>
+                    <div class="result-box">
+                        <div class="stat-row"><span>Rahul Das (Age: 60)</span> <span>Arthritis</span></div>
+                        <div class="stat-row"><span>Suresh Babu (Age: 55)</span> <span>Hypertension</span></div>
+                        <div class="stat-row"><span>Meena Kumari (Age: 50)</span> <span>Pneumonia</span></div>
+                        <div class="stat-row"><span>Anitha Devi (Age: 47)</span> <span>Asthma</span></div>
+                        <div class="stat-row"><span>Karthik Raj (Age: 42)</span> <span>Heart Disease</span></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab 3: Clinical & Stay -->
+        <div id="tab-clinical" class="tab-pane">
+            <div class="query-cards-grid">
+                <div class="query-result-card">
+                    <h3>&#128337; Hospital Stay Duration (Q15, Q16)</h3>
+                    <div class="sql-box">
+                        <span class="kw">SELECT</span> patient_name, <span class="fn">DATEDIFF</span>(discharge_date, admission_date) <span class="kw">AS</span> stay_days <span class="kw">FROM</span> patients;
+                    </div>
+                    <div class="result-box">
+                        <div class="stat-row"><span>Karthik Raj (ID: 103)</span> <span class="badge badge-stay">13 Days (Longest)</span></div>
+                        <div class="stat-row"><span>Suresh Babu / Rahul Das / Meena Kumari</span> <span class="badge badge-stay">10 Days each</span></div>
+                        <div class="stat-row"><span>Priya Sharma / Vijay Kumar</span> <span class="badge badge-stay">7 Days each</span></div>
+                        <div class="stat-row"><span>Anitha Devi / Lakshmi Priya</span> <span class="badge badge-stay">4 Days each</span></div>
+                    </div>
+                </div>
+
+                <div class="query-result-card">
+                    <h3>&#129658; Disease-Wise Patient Count (Q10)</h3>
+                    <div class="sql-box">
+                        <span class="kw">SELECT</span> disease, <span class="fn">COUNT</span>(*) <span class="kw">FROM</span> patients <span class="kw">GROUP BY</span> disease;
+                    </div>
+                    <div class="result-box">
+                        <div class="stat-row"><span>Cardiology (Heart Disease)</span> <strong>1 Patient</strong></div>
+                        <div class="stat-row"><span>Pulmonology (Asthma, Pneumonia)</span> <strong>2 Patients</strong></div>
+                        <div class="stat-row"><span>Nephrology (Kidney Stone)</span> <strong>1 Patient</strong></div>
+                        <div class="stat-row"><span>Others (Fever, Migraine, Arthritis)</span> <strong>6 Patients</strong></div>
+                    </div>
+                </div>
+
+                <div class="query-result-card">
+                    <h3>&#128197; Admitted Between 15-Sep & 25-Sep (Q9)</h3>
+                    <div class="sql-box">
+                        <span class="kw">SELECT</span> patient_name, admission_date <span class="kw">FROM</span> patients <span class="kw">WHERE</span> admission_date <span class="kw">BETWEEN</span> '2026-09-15' <span class="kw">AND</span> '2026-09-25';
+                    </div>
+                    <div class="result-box">
+                        <div class="stat-row"><span>Karthik Raj (2026-09-15)</span> <span>Room 103</span></div>
+                        <div class="stat-row"><span>Meena Kumari (2026-09-17)</span> <span>Room 110</span></div>
+                        <div class="stat-row"><span>Priya Sharma (2026-09-18)</span> <span>Room 102</span></div>
+                        <div class="stat-row"><span>Arun Kumar (2026-09-20)</span> <span>Room 101</span></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab 4: Visual Analytics Charts -->
+        <div id="tab-charts" class="tab-pane">
+            <div class="charts-grid">
+                <div class="chart-box">
+                    <h4>&#128176; Doctor Revenue Distribution (Hive SUM)</h4>
+                    <canvas id="doctorRevenueChart" height="200"></canvas>
+                </div>
+                <div class="chart-box">
+                    <h4>&#129656; Blood Group Breakdown</h4>
+                    <canvas id="bloodGroupChart" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab 5: Summary -->
+        <div id="tab-summary" class="tab-pane">
+            <div class="query-result-card" style="max-width: 850px; margin: 0 auto;">
+                <h3>&#128202; Final Project Analytical Summary (Hive Query 17)</h3>
+                <div class="sql-box">
+                    <span class="kw">SELECT</span> <span class="fn">COUNT</span>(*) <span class="kw">AS</span> total_patients, <span class="fn">SUM</span>(bill_amount) <span class="kw">AS</span> total_bill, <span class="fn">AVG</span>(bill_amount) <span class="kw">AS</span> average_bill, <span class="fn">MAX</span>(bill_amount) <span class="kw">AS</span> highest_bill, <span class="fn">MIN</span>(bill_amount) <span class="kw">AS</span> lowest_bill <span class="kw">FROM</span> patients;
+                </div>
+                <div class="result-box" id="q17SummaryBox">
+                    <div class="stat-row"><span>Total Patient Records:</span> <strong id="sumTotalCount">10 Records</strong></div>
+                    <div class="stat-row"><span>Total Hospital Revenue:</span> <strong class="currency-val" id="sumTotalRev">&#8377;1,17,500.00</strong></div>
+                    <div class="stat-row"><span>Average Patient Billing:</span> <strong class="currency-val" id="sumAvgBill">&#8377;11,750.00</strong></div>
+                    <div class="stat-row"><span>Highest Single Bill (Karthik Raj):</span> <strong class="currency-val" id="sumMaxBill">&#8377;25,000.00</strong></div>
+                    <div class="stat-row"><span>Lowest Single Bill (Lakshmi Priya):</span> <strong class="currency-val" id="sumMinBill">&#8377;5,000.00</strong></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<!-- Add / Edit Patient Modal -->
+<div class="modal-overlay" id="patientModal">
+    <div class="modal-box">
+        <div class="modal-header">
+            <h3 id="modalTitle">&#10010; Add Patient Record</h3>
+            <button class="modal-close" onclick="closePatientModal()">&times;</button>
+        </div>
+        <form id="patientForm" onsubmit="savePatient(event)">
+            <div class="modal-body">
+                <input type="hidden" id="editPatientIndex" value="-1">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="pId">Patient ID *</label>
+                        <input type="number" id="pId" required placeholder="e.g. 111">
+                    </div>
+                    <div class="form-group">
+                        <label for="pName">Patient Name *</label>
+                        <input type="text" id="pName" required placeholder="Full Name">
+                    </div>
+                    <div class="form-group">
+                        <label for="pAge">Age *</label>
+                        <input type="number" id="pAge" required placeholder="Age in years">
+                    </div>
+                    <div class="form-group">
+                        <label for="pGender">Gender *</label>
+                        <select id="pGender" required>
+                            <option value="Male">Male</option>
+                            <option value="Female">Female</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="pBlood">Blood Group *</label>
+                        <select id="pBlood" required>
+                            <option value="O+">O+</option>
+                            <option value="A+">A+</option>
+                            <option value="B+">B+</option>
+                            <option value="AB+">AB+</option>
+                            <option value="O-">O-</option>
+                            <option value="A-">A-</option>
+                            <option value="B-">B-</option>
+                            <option value="AB-">AB-</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="pDisease">Diagnosis / Disease *</label>
+                        <input type="text" id="pDisease" required placeholder="e.g. Diabetes, Fever">
+                    </div>
+                    <div class="form-group">
+                        <label for="pDoctor">Attending Doctor *</label>
+                        <select id="pDoctor" required>
+                            <option value="Dr. Kumar">Dr. Kumar (Cardiology / Urology)</option>
+                            <option value="Dr. Meena">Dr. Meena (Pulmonology / General)</option>
+                            <option value="Dr. Ravi">Dr. Ravi (Orthopedic / General)</option>
+                            <option value="Dr. Priya">Dr. Priya (Neurology / Hematology)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="pAdm">Admission Date *</label>
+                        <input type="date" id="pAdm" required onchange="calcStayDays()">
+                    </div>
+                    <div class="form-group">
+                        <label for="pDis">Discharge Date *</label>
+                        <input type="date" id="pDis" required onchange="calcStayDays()">
+                    </div>
+                    <div class="form-group">
+                        <label for="pStay">Calculated Stay (Days)</label>
+                        <input type="number" id="pStay" readonly placeholder="Auto calculated">
+                    </div>
+                    <div class="form-group">
+                        <label for="pRoom">Room No *</label>
+                        <input type="number" id="pRoom" required placeholder="e.g. 111">
+                    </div>
+                    <div class="form-group">
+                        <label for="pTreatment">Treatment Plan *</label>
+                        <input type="text" id="pTreatment" required placeholder="e.g. Medication, Therapy">
+                    </div>
+                    <div class="form-group full-width">
+                        <label for="pBill">Total Bill Amount (&#8377; INR) *</label>
+                        <input type="number" id="pBill" required placeholder="e.g. 9500">
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="closePatientModal()">Cancel</button>
+                <button type="submit" class="btn btn-primary" id="modalSubmitBtn">Save Patient</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Docker Setup / Info Modal -->
+<div class="modal-overlay" id="dockerModal">
+    <div class="modal-box">
+        <div class="modal-header">
+            <h3>&#128011; Docker Deployment Guide & Commands</h3>
+            <button class="modal-close" onclick="closeDockerModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+            <p style="font-size: 0.86rem; color: var(--text-muted); margin-bottom: 1rem;">
+                Use the following Docker commands to run this Hospital Management System frontend and Hive container stack:
+            </p>
+            <div class="docker-card-code">
+                <code>docker compose up -d --build</code>
+                <button class="btn btn-sm btn-outline-white" onclick="copyToClipboard('docker compose up -d --build')">&#128203;</button>
+            </div>
+            <div class="docker-card-code">
+                <code>docker build -t hospital-management-system .</code>
+                <button class="btn btn-sm btn-outline-white" onclick="copyToClipboard('docker build -t hospital-management-system .')">&#128203;</button>
+            </div>
+            <div class="docker-card-code">
+                <code>docker run -d -p 8080:80 hospital-management-system</code>
+                <button class="btn btn-sm btn-outline-white" onclick="copyToClipboard('docker run -d -p 8080:80 hospital-management-system')">&#128203;</button>
+            </div>
+            <div style="background: #f1f5f9; padding: 1rem; border-radius: 8px; font-size: 0.82rem; margin-top: 1rem;">
+                <strong>&#128161; Access URL:</strong> Open your browser and navigate to <code>http://localhost:8080</code> after starting Docker.
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" onclick="closeDockerModal()">Close</button>
+        </div>
+    </div>
+</div>
+
+<!-- Toast Container -->
+<div class="toast-container" id="toastContainer"></div>
+
+<!-- Footer -->
+<footer>
+    <p><strong>Hospital Patient Management System</strong> &bull; Apache Hive 4.1.0 Big Data Analytics &bull; Containerized with Docker</p>
+    <p style="margin-top: 0.4rem; font-size: 0.78rem; opacity: 0.75;">Big Data Lab Project &bull; Database: hospital_db &bull; Table: patients</p>
+</footer>
+
+<script>
+    // Initial dataset matching Apache Hive database
+    let patientsData = [
+        { id: 101, name: "Arun Kumar", age: 35, gender: "Male", blood: "O+", disease: "Fever", doctor: "Dr. Ravi", adm: "2026-09-20", dis: "2026-09-23", stay: 3, room: 101, treatment: "Medication", bill: 5500 },
+        { id: 102, name: "Priya Sharma", age: 28, gender: "Female", blood: "A+", disease: "Diabetes", doctor: "Dr. Meena", adm: "2026-09-18", dis: "2026-09-25", stay: 7, room: 102, treatment: "Insulin Therapy", bill: 8500 },
+        { id: 103, name: "Karthik Raj", age: 42, gender: "Male", blood: "B+", disease: "Heart Disease", doctor: "Dr. Kumar", adm: "2026-09-15", dis: "2026-09-28", stay: 13, room: 103, treatment: "Cardiac Treatment", bill: 25000 },
+        { id: 104, name: "Divya S", age: 31, gender: "Female", blood: "AB+", disease: "Migraine", doctor: "Dr. Priya", adm: "2026-09-22", dis: "2026-09-24", stay: 2, room: 104, treatment: "Pain Management", bill: 6000 },
+        { id: 105, name: "Suresh Babu", age: 55, gender: "Male", blood: "O-", disease: "Hypertension", doctor: "Dr. Ravi", adm: "2026-09-10", dis: "2026-09-20", stay: 10, room: 105, treatment: "Blood Pressure Therapy", bill: 12000 },
+        { id: 106, name: "Anitha Devi", age: 47, gender: "Female", blood: "B-", disease: "Asthma", doctor: "Dr. Meena", adm: "2026-09-25", dis: "2026-09-29", stay: 4, room: 106, treatment: "Inhaler Therapy", bill: 7500 },
+        { id: 107, name: "Vijay Kumar", age: 39, gender: "Male", blood: "A-", disease: "Kidney Stone", doctor: "Dr. Kumar", adm: "2026-09-12", dis: "2026-09-19", stay: 7, room: 107, treatment: "Surgery", bill: 18000 },
+        { id: 108, name: "Lakshmi Priya", age: 26, gender: "Female", blood: "O+", disease: "Anemia", doctor: "Dr. Priya", adm: "2026-09-26", dis: "2026-09-30", stay: 4, room: 108, treatment: "Iron Therapy", bill: 5000 },
+        { id: 109, name: "Rahul Das", age: 60, gender: "Male", blood: "AB-", disease: "Arthritis", doctor: "Dr. Ravi", adm: "2026-09-05", dis: "2026-09-15", stay: 10, room: 109, treatment: "Physiotherapy", bill: 14000 },
+        { id: 110, name: "Meena Kumari", age: 50, gender: "Female", blood: "A+", disease: "Pneumonia", doctor: "Dr. Meena", adm: "2026-09-17", dis: "2026-09-27", stay: 10, room: 110, treatment: "Antibiotic Treatment", bill: 16000 }
+    ];
+
+    let doctorChartInstance = null;
+    let bloodChartInstance = null;
+
+    // Toast notification
+    function showToast(msg, type = "info") {
+        const container = document.getElementById("toastContainer");
+        const toast = document.createElement("div");
+        toast.className = `toast toast-${type}`;
+        toast.innerHTML = `<span>${type === 'success' ? '&#10004;' : type === 'danger' ? '&#9888;' : '&#8505;'}</span> ${msg}`;
+        container.appendChild(toast);
+        setTimeout(() => {
+            toast.remove();
+        }, 3500);
+    }
+
+    // Render Table
+    function renderTable(data) {
+        const tbody = document.getElementById("patientTableBody");
+        tbody.innerHTML = "";
+
+        if (data.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="14" style="text-align:center; padding: 2rem; color: var(--text-muted);">No matching patient records found</td></tr>`;
+            return;
+        }
+
+        data.forEach(p => {
+            const tr = document.createElement("tr");
+            tr.innerHTML = `
+                <td><strong>#${p.id}</strong></td>
+                <td><strong>${p.name}</strong></td>
+                <td>${p.age}</td>
+                <td><span class="badge ${p.gender === 'Male' ? 'badge-gender-m' : 'badge-gender-f'}">${p.gender}</span></td>
+                <td><span class="badge badge-blood">${p.blood}</span></td>
+                <td>${p.disease}</td>
+                <td><span class="badge badge-doctor">${p.doctor}</span></td>
+                <td>${p.adm}</td>
+                <td>${p.dis}</td>
+                <td><span class="badge badge-stay">${p.stay} Days</span></td>
+                <td>Room ${p.room}</td>
+                <td>${p.treatment}</td>
+                <td class="currency-val">&#8377;${p.bill.toLocaleString('en-IN')}</td>
+                <td>
+                    <div class="action-cell">
+                        <button class="btn btn-sm btn-secondary" onclick="editPatient(${p.id})">&#9998; Edit</button>
+                        <button class="btn btn-sm btn-danger" onclick="deletePatient(${p.id})">&#128465;</button>
+                    </div>
+                </td>
+            `;
+            tbody.appendChild(tr);
+        });
+    }
+
+    // Filter Function
+    function filterPatients() {
+        const search = document.getElementById("searchInput").value.toLowerCase();
+        const doctor = document.getElementById("doctorFilter").value;
+        const gender = document.getElementById("genderFilter").value;
+
+        const filtered = patientsData.filter(p => {
+            const matchesSearch = p.name.toLowerCase().includes(search) ||
+                                  p.disease.toLowerCase().includes(search) ||
+                                  p.doctor.toLowerCase().includes(search) ||
+                                  p.blood.toLowerCase().includes(search) ||
+                                  p.id.toString().includes(search);
+            const matchesDoctor = doctor === "" || p.doctor === doctor;
+            const matchesGender = gender === "" || p.gender === gender;
+
+            return matchesSearch && matchesDoctor && matchesGender;
+        });
+
+        renderTable(filtered);
+    }
+
+    // Recalculate KPI & Showcase metrics
+    function updateAnalytics() {
+        if (patientsData.length === 0) return;
+
+        const totalPatients = patientsData.length;
+        const totalBill = patientsData.reduce((acc, p) => acc + Number(p.bill), 0);
+        const avgBill = Math.round(totalBill / totalPatients);
+
+        const males = patientsData.filter(p => p.gender === 'Male').length;
+        const females = patientsData.filter(p => p.gender === 'Female').length;
+
+        let maxBillObj = patientsData[0];
+        let maxStayObj = patientsData[0];
+
+        patientsData.forEach(p => {
+            if (Number(p.bill) > Number(maxBillObj.bill)) maxBillObj = p;
+            if (Number(p.stay) > Number(maxStayObj.stay)) maxStayObj = p;
+        });
+
+        // Update KPI Cards
+        document.getElementById("kpiTotalPatients").innerText = totalPatients;
+        document.getElementById("kpiGenderBreakdown").innerText = `${males} Male • ${females} Female`;
+        document.getElementById("kpiTotalBill").innerHTML = `&#8377;${totalBill.toLocaleString('en-IN')}`;
+        document.getElementById("kpiAvgBill").innerHTML = `&#8377;${avgBill.toLocaleString('en-IN')}`;
+        document.getElementById("kpiHighestBill").innerHTML = `&#8377;${Number(maxBillObj.bill).toLocaleString('en-IN')}`;
+        document.getElementById("kpiHighestBillPatient").innerText = `${maxBillObj.name} (${maxBillObj.disease})`;
+        document.getElementById("kpiLongestStay").innerText = `${maxStayObj.stay} Days`;
+        document.getElementById("kpiLongestStayPatient").innerText = `Patient #${maxStayObj.id} (${maxStayObj.name})`;
+
+        // Update Summary tab
+        document.getElementById("sumTotalCount").innerText = `${totalPatients} Records`;
+        document.getElementById("sumTotalRev").innerHTML = `&#8377;${totalBill.toLocaleString('en-IN')}.00`;
+        document.getElementById("sumAvgBill").innerHTML = `&#8377;${avgBill.toLocaleString('en-IN')}.00`;
+        document.getElementById("sumMaxBill").innerHTML = `&#8377;${Number(maxBillObj.bill).toLocaleString('en-IN')}.00`;
+
+        updateCharts();
+    }
+
+    // Modal Operations
+    function openPatientModal(isEdit = false) {
+        document.getElementById("patientModal").classList.add("active");
+        if (!isEdit) {
+            document.getElementById("modalTitle").innerHTML = "&#10010; Add New Patient Record";
+            document.getElementById("modalSubmitBtn").innerText = "Add Patient";
+            document.getElementById("editPatientIndex").value = "-1";
+            document.getElementById("patientForm").reset();
+            const nextId = patientsData.length > 0 ? Math.max(...patientsData.map(p => p.id)) + 1 : 101;
+            document.getElementById("pId").value = nextId;
+        }
+    }
+
+    function closePatientModal() {
+        document.getElementById("patientModal").classList.remove("active");
+    }
+
+    function openDockerModal() {
+        document.getElementById("dockerModal").classList.add("active");
+    }
+
+    function closeDockerModal() {
+        document.getElementById("dockerModal").classList.remove("active");
+    }
+
+    function calcStayDays() {
+        const adm = document.getElementById("pAdm").value;
+        const dis = document.getElementById("pDis").value;
+        if (adm && dis) {
+            const d1 = new Date(adm);
+            const d2 = new Date(dis);
+            const diffTime = d2 - d1;
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            document.getElementById("pStay").value = diffDays >= 0 ? diffDays : 0;
+        }
+    }
+
+    function savePatient(e) {
+        e.preventDefault();
+        const editIdx = parseInt(document.getElementById("editPatientIndex").value);
+
+        const newPatient = {
+            id: parseInt(document.getElementById("pId").value),
+            name: document.getElementById("pName").value,
+            age: parseInt(document.getElementById("pAge").value),
+            gender: document.getElementById("pGender").value,
+            blood: document.getElementById("pBlood").value,
+            disease: document.getElementById("pDisease").value,
+            doctor: document.getElementById("pDoctor").value,
+            adm: document.getElementById("pAdm").value,
+            dis: document.getElementById("pDis").value,
+            stay: parseInt(document.getElementById("pStay").value) || 1,
+            room: parseInt(document.getElementById("pRoom").value),
+            treatment: document.getElementById("pTreatment").value,
+            bill: parseFloat(document.getElementById("pBill").value)
+        };
+
+        if (editIdx >= 0) {
+            patientsData[editIdx] = newPatient;
+            showToast(`Patient #${newPatient.id} updated successfully!`, "success");
+        } else {
+            // Check for duplicate ID
+            if (patientsData.some(p => p.id === newPatient.id)) {
+                showToast(`Patient ID #${newPatient.id} already exists!`, "danger");
+                return;
+            }
+            patientsData.push(newPatient);
+            showToast(`New Patient #${newPatient.id} registered in Hive dataset!`, "success");
+        }
+
+        closePatientModal();
+        filterPatients();
+        updateAnalytics();
+    }
+
+    function editPatient(id) {
+        const idx = patientsData.findIndex(p => p.id === id);
+        if (idx !== -1) {
+            const p = patientsData[idx];
+            document.getElementById("editPatientIndex").value = idx;
+            document.getElementById("modalTitle").innerHTML = `&#9998; Edit Patient #${p.id}`;
+            document.getElementById("modalSubmitBtn").innerText = "Update Record";
+
+            document.getElementById("pId").value = p.id;
+            document.getElementById("pName").value = p.name;
+            document.getElementById("pAge").value = p.age;
+            document.getElementById("pGender").value = p.gender;
+            document.getElementById("pBlood").value = p.blood;
+            document.getElementById("pDisease").value = p.disease;
+            document.getElementById("pDoctor").value = p.doctor;
+            document.getElementById("pAdm").value = p.adm;
+            document.getElementById("pDis").value = p.dis;
+            document.getElementById("pStay").value = p.stay;
+            document.getElementById("pRoom").value = p.room;
+            document.getElementById("pTreatment").value = p.treatment;
+            document.getElementById("pBill").value = p.bill;
+
+            openPatientModal(true);
+        }
+    }
+
+    function deletePatient(id) {
+        if (confirm(`Are you sure you want to delete Patient #${id}?`)) {
+            patientsData = patientsData.filter(p => p.id !== id);
+            showToast(`Patient #${id} removed from system.`, "danger");
+            filterPatients();
+            updateAnalytics();
+        }
+    }
+
+    // Tab switcher
+    function switchTab(tabId) {
+        document.querySelectorAll(".tab-pane").forEach(pane => pane.classList.remove("active"));
+        document.querySelectorAll(".tab-btn").forEach(btn => btn.classList.remove("active"));
+
+        const targetPane = document.getElementById(tabId);
+        if (targetPane) targetPane.classList.add("active");
+
+        if (event && event.currentTarget) {
+            event.currentTarget.classList.add("active");
+        }
+
+        if (tabId === 'tab-charts') {
+            setTimeout(renderCharts, 100);
+        }
+    }
+
+    // Preset Queries for Simulator
+    const presets = {
+        "1": "SELECT COUNT(*) AS total_patients, SUM(bill_amount) AS total_revenue FROM patients;",
+        "2": "SELECT doctor, COUNT(*) AS total_patients, SUM(bill_amount) AS total_revenue FROM patients GROUP BY doctor ORDER BY total_revenue DESC;",
+        "3": "SELECT patient_name, disease, doctor, bill_amount FROM patients WHERE bill_amount > 10000 ORDER BY bill_amount DESC;",
+        "4": "SELECT blood_group, COUNT(*) AS patient_count FROM patients GROUP BY blood_group;",
+        "5": "SELECT patient_name, age, disease, doctor FROM patients WHERE age > 40;",
+        "6": "SELECT patient_name, DATEDIFF(discharge_date, admission_date) AS stay_days FROM patients ORDER BY stay_days DESC;"
+    };
+
+    function loadPresetQuery() {
+        const val = document.getElementById("queryPresets").value;
+        if (presets[val]) {
+            document.getElementById("sqlQueryInput").value = presets[val];
+        }
+    }
+
+    function runSimulatedQuery() {
+        const query = document.getElementById("sqlQueryInput").value.trim();
+        const consoleEl = document.getElementById("sqlOutputConsole");
+        const tableEl = document.getElementById("sqlOutputTable");
+        const metaEl = document.getElementById("sqlOutputMeta");
+
+        consoleEl.style.display = "block";
+        metaEl.innerText = "Executing Hive Tez Job on Docker container...";
+
+        setTimeout(() => {
+            metaEl.innerHTML = `<span style="color: #4ade80;">&#10004; Query Executed via Beeline (Docker: hive4) in 0.38s</span>`;
+
+            // Simple parser simulation for demonstration
+            if (query.includes("GROUP BY doctor") || query.includes("doctor")) {
+                const docMap = {};
+                patientsData.forEach(p => {
+                    if (!docMap[p.doctor]) docMap[p.doctor] = { count: 0, sum: 0 };
+                    docMap[p.doctor].count++;
+                    docMap[p.doctor].sum += p.bill;
+                });
+                let html = '<table style="width:100%; border:1px solid #334155; color:white; font-size:0.75rem;"><thead><tr style="background:#1e293b;"><th style="padding:4px 8px; color:#38bdf8;">doctor</th><th style="padding:4px 8px; color:#38bdf8;">patient_count</th><th style="padding:4px 8px; color:#38bdf8;">total_revenue</th></tr></thead><tbody>';
+                Object.keys(docMap).forEach(doc => {
+                    html += `<tr><td style="padding:4px 8px;">${doc}</td><td style="padding:4px 8px;">${docMap[doc].count}</td><td style="padding:4px 8px;">₹${docMap[doc].sum.toLocaleString('en-IN')}</td></tr>`;
+                });
+                html += '</tbody></table>';
+                tableEl.innerHTML = html;
+            } else if (query.includes("blood_group")) {
+                const bgMap = {};
+                patientsData.forEach(p => {
+                    bgMap[p.blood] = (bgMap[p.blood] || 0) + 1;
+                });
+                let html = '<table style="width:100%; border:1px solid #334155; color:white; font-size:0.75rem;"><thead><tr style="background:#1e293b;"><th style="padding:4px 8px; color:#38bdf8;">blood_group</th><th style="padding:4px 8px; color:#38bdf8;">count</th></tr></thead><tbody>';
+                Object.keys(bgMap).forEach(bg => {
+                    html += `<tr><td style="padding:4px 8px;">${bg}</td><td style="padding:4px 8px;">${bgMap[bg]}</td></tr>`;
+                });
+                html += '</tbody></table>';
+                tableEl.innerHTML = html;
+            } else {
+                let html = '<table style="width:100%; border:1px solid #334155; color:white; font-size:0.75rem;"><thead><tr style="background:#1e293b;"><th style="padding:4px 8px; color:#38bdf8;">id</th><th style="padding:4px 8px; color:#38bdf8;">patient_name</th><th style="padding:4px 8px; color:#38bdf8;">disease</th><th style="padding:4px 8px; color:#38bdf8;">bill_amount</th></tr></thead><tbody>';
+                patientsData.slice(0, 5).forEach(p => {
+                    html += `<tr><td style="padding:4px 8px;">${p.id}</td><td style="padding:4px 8px;">${p.name}</td><td style="padding:4px 8px;">${p.disease}</td><td style="padding:4px 8px;">₹${p.bill}</td></tr>`;
+                });
+                html += '</tbody></table>';
+                tableEl.innerHTML = html;
+            }
+            showToast("Hive query executed successfully!", "success");
+        }, 400);
+    }
+
+    // Chart.js Visualizations
+    function renderCharts() {
+        const docCtx = document.getElementById("doctorRevenueChart");
+        const bgCtx = document.getElementById("bloodGroupChart");
+        if (!docCtx || !bgCtx) return;
+
+        const docMap = {};
+        patientsData.forEach(p => {
+            docMap[p.doctor] = (docMap[p.doctor] || 0) + p.bill;
+        });
+
+        const bgMap = {};
+        patientsData.forEach(p => {
+            bgMap[p.blood] = (bgMap[p.blood] || 0) + 1;
+        });
+
+        if (doctorChartInstance) doctorChartInstance.destroy();
+        if (bloodChartInstance) bloodChartInstance.destroy();
+
+        doctorChartInstance = new Chart(docCtx, {
+            type: 'bar',
+            data: {
+                labels: Object.keys(docMap),
+                datasets: [{
+                    label: 'Total Revenue (₹)',
+                    data: Object.values(docMap),
+                    backgroundColor: ['#0284c7', '#10b981', '#f59e0b', '#8b5cf6'],
+                    borderRadius: 6
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: { legend: { display: false } }
+            }
+        });
+
+        bloodChartInstance = new Chart(bgCtx, {
+            type: 'doughnut',
+            data: {
+                labels: Object.keys(bgMap),
+                datasets: [{
+                    data: Object.values(bgMap),
+                    backgroundColor: ['#f43f5e', '#0ea5e9', '#10b981', '#f59e0b', '#a855f7', '#64748b', '#ec4899', '#84cc16']
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: { legend: { position: 'bottom' } }
+            }
+        });
+    }
+
+    function updateCharts() {
+        if (document.getElementById("tab-charts").classList.contains("active")) {
+            renderCharts();
+        }
+    }
+
+    // Export CSV
+    function exportToCSV() {
+        let csvContent = "data:text/csv;charset=utf-8,ID,Patient Name,Age,Gender,Blood Group,Disease,Doctor,Admission Date,Discharge Date,Stay Days,Room No,Treatment,Bill Amount (INR)\n";
+        patientsData.forEach(p => {
+            csvContent += `${p.id},"${p.name}",${p.age},${p.gender},${p.blood},"${p.disease}","${p.doctor}",${p.adm},${p.dis},${p.stay},${p.room},"${p.treatment}",${p.bill}\n`;
+        });
+        const encodedUri = encodeURI(csvContent);
+        const link = document.createElement("a");
+        link.setAttribute("href", encodedUri);
+        link.setAttribute("download", `hospital_patients_hive_${new Date().toISOString().slice(0,10)}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        showToast("Patient records exported to CSV successfully!", "success");
+    }
+
+    // Clipboard copy helper
+    function copyToClipboard(text) {
+        navigator.clipboard.writeText(text).then(() => {
+            showToast(`Copied: "${text}"`, "info");
+        });
+    }
+
+    // Initial load
+    document.addEventListener("DOMContentLoaded", () => {
+        renderTable(patientsData);
+        updateAnalytics();
+    });
+</script>
+</body>
+</html>
